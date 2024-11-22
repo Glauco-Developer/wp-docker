@@ -1,0 +1,7 @@
+# Ignore all files inside db/ and ssl/
+db/
+ssl/
+
+# Ignore hidden files and subdirectories within db/ and ssl/
+db/**/*
+ssl/**/*
