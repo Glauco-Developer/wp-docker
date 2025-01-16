@@ -1,42 +1,53 @@
-# WordPress Docker Environment with Preloaded Database
+# Docker Compose Setup for WordPress with PHP, MySQL, and phpMyAdmin
 
-This setup provides a complete WordPress environment using Docker, including phpMyAdmin and WP-CLI. The database is preloaded from an SQL dump file located in the `db/` folder.
+## Summary of the Key Points
 
----
+- **PHP Service**: Runs the PHP image with Apache, exposing the site on port 8080.
+- **Database Service**: Runs MySQL 5.7 with a persistent volume for database data.
+- **phpMyAdmin Service**: Provides a web interface to manage the MySQL database, accessible on port 8081.
+- **Volumes**: Ensures MySQL data persists across container restarts and shutdowns.
+- **Networks**: All services are connected to a custom bridge network (`wordpress_network`) to allow communication between containers.
 
-## Steps to Set Up the Environment
+## Commands to Run
 
 ```bash
-# Build and Run the Docker Containers
-
-# Build the Docker images
-docker-compose up --build
-
-# Start the containers
+# Build and Start Containers
 docker-compose up -d
 
-# Access Points
-# WordPress: http://localhost:8000
-# phpMyAdmin: http://localhost:8080
+# Check the status of the containers
+docker-compose ps
 
-# Configure SSL (Optional for Development)
-mkdir ssl
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ssl/server.key -out ssl/server.crt \
--subj "/C=US/ST=State/L=City/O=Organization/OU=Department/CN=localhost"
+# Access the PHP container
+docker exec -it php-container bash
 
-# Import the Database
-docker exec -it wordpress-db bash
-mysql -u root -p wordpress < /tmp/db/db.sql
+# Check PHP version inside the container
+php -v
 
-# WP-CLI Commands
+# Update WordPress (WP-CLI)
+wp core update --allow-root
 
-# Search and Replace URLs
-docker exec -it wordpress-app bash
-cd /var/www/html
-wp search-replace 'https://www.domain.com' 'http://localhost:8000' --allow-root
-
-# Update Plugins
-wp plugin list --allow-root
-wp plugin update acf-better-search --allow-root
+# Update all Plugins (WP-CLI)
 wp plugin update --all --allow-root
-```
+
+# Update a specific Plugins (WP-CLI)
+wp plugin update <plugin-slug> --allow-root
+
+# List all plugins
+wp plugin list --allow-root
+
+# Check WP Version
+wp core version --allow-root
+
+# Access the MySQL container
+docker exec -it mysql-container bash
+
+#To access MySQL:
+mysql -u root -p
+
+# Access phpMyAdmin in your browser
+Go to http://localhost:8081 to manage the MySQL database.
+
+# Stop the containers
+docker-compose down
+
+

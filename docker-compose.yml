@@ -1,46 +1,50 @@
 services:
-  wordpress:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: wordpress-app
+  php:
+    image: php:7.4-apache
+    container_name: php-container
+    restart: always
     ports:
-      - "8000:80" # WordPress accessible on port 8000
-      - "4430:443" # SSL port for testing, optional
-    environment:
-      WORDPRESS_DB_HOST: db
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: wordpress_password
-      WORDPRESS_DB_NAME: wordpress
+      - "8080:80"
     volumes:
-      - ./wp-content:/var/www/html/wp-content # Mounts the host's wp-content directory into the container
-    depends_on:
-      - db
-
+      - ./app:/var/www/html
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: example
+    networks:
+      - wordpress_network
+    command: bash -c "curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && chmod +x wp-cli.phar && mv wp-cli.phar /usr/local/bin/wp && a2enmod rewrite && docker-php-ext-install mysqli && chown -R www-data:www-data /var/www/html && apache2-foreground"
   db:
     image: mysql:5.7
-    container_name: wordpress-db
-    ports:
-      - "3307:3306" # MySQL port mapped to avoid conflicts
+    container_name: mysql-container
+    restart: always
     environment:
+      MYSQL_ROOT_PASSWORD: example
       MYSQL_DATABASE: wordpress
-      MYSQL_USER: wordpress_user
-      MYSQL_PASSWORD: wordpress_password
-      MYSQL_ROOT_PASSWORD: root_password
     volumes:
+      - ./db:/docker-entrypoint-initdb.d
       - db_data:/var/lib/mysql
-      - ./db:/tmp/db # Mounts the host's db directory into the container at /tmp/db
+    networks:
+      - wordpress_network
 
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: phpmyadmin
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin-container
+    restart: always
     environment:
       PMA_HOST: db
-      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: example
     ports:
-      - "8080:80" # phpMyAdmin accessible on port 8080
-    depends_on:
-      - db
+      - "8081:80"
+    networks:
+      - wordpress_network
 
 volumes:
   db_data:
+    driver: local
+
+networks:
+  wordpress_network:
+    driver: bridge
